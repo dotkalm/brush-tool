@@ -1,6 +1,7 @@
 import React, { type FC, useEffect, useRef, useState } from 'react';
 import audioFiles from '../constants/waves';
 import csvJSON from '../constants/normalized.json';
+import SVGArtboard from './SVGArtboard';
 
 const AudioVisualizer: FC<{ index: number }> = ({ index }) => {
     const amps = csvJSON[index];
@@ -126,6 +127,7 @@ const AudioVisualizer: FC<{ index: number }> = ({ index }) => {
                 </button>
             )}
             <canvas ref={canvasRef} style={{ display: 'block', margin: '0 auto', background: '#111' }} />
+            <SVGArtboard coords={[amps[index -1] || 0, amps[index], amps[index + 1] || 0]} />
             <div
             style={{
                 color: 'white',
