@@ -4,12 +4,16 @@ import csvJSON from '../constants/normalized.json';
 
 const Line: FC = () => {
     const [index, setIndex] = useState<number>();
+    const [ previousDisabled, setPreviousDisabled ] = useState(true);
+    const [ nextDisabled, setNextDisabled ] = useState(false);
 
     // Load index from localStorage on mount
     useEffect(() => {
         const storedIndex = localStorage.getItem('lineIndex');
         if (storedIndex !== null) {
             setIndex(Number(storedIndex));
+        } else {
+            localStorage.setItem('lineIndex', '0');
         }
     }, []);
 
@@ -19,23 +23,27 @@ const Line: FC = () => {
     }, [index]);
 
     function clickHandler(increment: boolean){
-        if(index){
+        if(index !== undefined){
             setIndex(!increment ? (index - 1) : (index + 1))
         }
     }
 
-    let previousDisabled = index === undefined;
-    if(index && index <= 0){
-        previousDisabled = true;
-    }
+    useEffect(() => {
+        if(index !== undefined && csvJSON.length - 1 >= index){
+            setNextDisabled(false);
+        }else{
+            setNextDisabled(true)
+        }
+        if(index !== undefined && index >= 0){
+            setPreviousDisabled(false);
+        }else{
+            setPreviousDisabled(true);
+        }
+    }, [nextDisabled, previousDisabled, index]);
 
-    let nextDisabled = index === undefined;
-    if(index && csvJSON.length - 1){
-        nextDisabled = true;
-    }
     return (
         <div>
-            {index && <AudioVisualizer index={index}/>}
+            {index !== undefined && <AudioVisualizer index={index}/>}
             <button onClick={() => clickHandler(false)} disabled={previousDisabled}>
                 Previous
             </button>
