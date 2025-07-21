@@ -1,4 +1,7 @@
 import React, { type FC, useEffect, useRef, useState } from 'react';
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+
 import audioFiles from '../constants/waves';
 import csvJSON from '../constants/normalized.json';
 import SVGArtboard from './SVGArtboard';
@@ -15,6 +18,7 @@ const AudioVisualizer: FC<{ index: number }> = ({ index }) => {
     const [currentDistance, setCurrentDistance] = useState('');
     const [isPaused, setIsPaused] = useState(false);
     const [pausedTime, setPausedTime] = useState(0);
+    const [ampWindow, setAmpWindow] = useState<number[]>([]);
 
     // Resize canvas to fit window
     useEffect(() => {
@@ -75,7 +79,23 @@ const AudioVisualizer: FC<{ index: number }> = ({ index }) => {
             return distanceTraveled.toFixed(1)
         }
 
+        const getAmpWindow = (): number[] => {
+            const audio = audioRef.current;
+            if (!audio) return Array(7).fill(0);
+            const elapsed = audio.currentTime;
+            const idx = Math.min(Math.floor(elapsed), amps.length - 1);
+            return [
+                amps[idx - 3] ?? 0,
+                amps[idx - 2] ?? 0,
+                amps[idx - 1] ?? 0,
+                amps[idx] ?? 0,
+                amps[idx + 1] ?? 0,
+                amps[idx + 2] ?? 0,
+                amps[idx + 3] ?? 0,
+            ];
+        };
         setCurrentDistance(makeDistance());
+        setAmpWindow(getAmpWindow());
 
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.save();
@@ -100,7 +120,6 @@ const AudioVisualizer: FC<{ index: number }> = ({ index }) => {
         if(isPaused) setIsPaused(false);
         const audio = audioRef.current;
         if (!audio) return;
-        console.log(audio);
         audio.currentTime = 0;
         audio.play();
         startTimeRef.current = performance.now();
@@ -109,52 +128,85 @@ const AudioVisualizer: FC<{ index: number }> = ({ index }) => {
     };
 
     return (
-        <div style={{ margin: 0, overflow: 'hidden', backgroundColor: '#111', height: '100vh' }}>
+        <Box
+            sx={{
+                backgroundColor: '#111',
+                height: '100vh',
+                margin: 0,
+                overflow: 'hidden',
+            }}
+        >
             {
-                <button
+                <Button
                     onClick={handlePlay}
-                    style={{ position: 'absolute', top: 20, left: 20, zIndex: 10 }}
+                    style={{
+                        left: 20,
+                        position: 'absolute',
+                        top: 20,
+                        zIndex: 10
+                    }}
+                    variant="outlined"
                 >
                     {!isPlaying ? 'Play' : 'restart'}
-                </button>
+                </Button>
             }
             {isPlaying && (
-                <button
+                <Button
                     onClick={handlePauseContinue}
-                    style={{ position: 'absolute', top: 70, left: 20, zIndex: 10 }}
+                    style={{
+                        left: 20,
+                        position: 'absolute',
+                        top: 70,
+                        zIndex: 10
+                    }}
+                    variant="outlined"
                 >
                     {isPaused ? 'Continue' : 'Pause'}
-                </button>
+                </Button>
             )}
-            <canvas ref={canvasRef} style={{ display: 'block', margin: '0 auto', background: '#111' }} />
-            <SVGArtboard coords={[amps[index -1] || 0, amps[index], amps[index + 1] || 0]} />
-            <div
+            <SVGArtboard 
+                coords={ampWindow} 
+            />
+            <canvas
+                ref={canvasRef}
+                style={{
+                    background: '#111',
+                    display: 'block',
+                    margin: '0 auto',
+                }}
+            />
+            <Box
             style={{
                 color: 'white',
+                fontFamily: 'monospace',
+                fontSize: '2em',
+                left: 150,
                 position: 'absolute',
                 top: 20,
-                left: 150,
-                fontSize: '2em',
                 zIndex: 10,
-                fontFamily: 'monospace',
-            }}>
+            }}
+            >
                 {index + 1} | {currentDistance}cm
-            </div>
-            <div
+            </Box>
+            <Box
                 style={{
-                    position: 'absolute',
-                    top: 20,
-                    right: 20,
                     color: '#fff',
+                    fontFamily: 'monospace',
                     fontSize: '2em',
+                    position: 'absolute',
+                    right: 20,
+                    top: 20,
                     zIndex: 10,
-                    fontFamily: 'monospace'
                 }}
             >
                 {counterText}
-            </div>
-            <audio ref={audioRef} src={audioFile} preload="auto" />
-        </div>
+            </Box>
+            <audio
+                preload="auto"
+                ref={audioRef}
+                src={audioFile}
+            />
+        </Box>
     );
 };
 
