@@ -19,6 +19,7 @@ const AudioVisualizer: FC<{ index: number }> = ({ index }) => {
     const [isPaused, setIsPaused] = useState(false);
     const [pausedTime, setPausedTime] = useState(0);
     const [ampWindow, setAmpWindow] = useState<number[]>([]);
+    const [measurements, setMeasurements] = useState<string[]>([])
 
     // Resize canvas to fit window
     useEffect(() => {
@@ -53,6 +54,15 @@ const AudioVisualizer: FC<{ index: number }> = ({ index }) => {
         }
     };
 
+    const makeDistance = (index: number) => {
+        const totalLengthCm = 122;
+        const steps = 264;
+        const stepSize = totalLengthCm / steps; // ≈ 0.4621 cm
+
+        const distanceTraveled = index * stepSize;
+        return distanceTraveled.toFixed(1)
+    }
+
     const draw = () => {
         const canvas = canvasRef.current;
         if (!canvas) return;
@@ -69,33 +79,9 @@ const AudioVisualizer: FC<{ index: number }> = ({ index }) => {
         const angle = Math.pow(ampNorm, curve) * maxAngle;
 
         setCounterText(`${idx}: ${amps[idx].toFixed(5)} (${(angle * (180 / Math.PI)).toFixed(1)}º)`);
-
-        const makeDistance = () => {
-            const totalLengthCm = 122;
-            const steps = 264;
-            const stepSize = totalLengthCm / steps; // ≈ 0.4621 cm
-
-            const distanceTraveled = idx * stepSize;
-            return distanceTraveled.toFixed(1)
-        }
-
-        const getAmpWindow = (): number[] => {
-            const audio = audioRef.current;
-            if (!audio) return Array(7).fill(0);
-            const elapsed = audio.currentTime;
-            const idx = Math.min(Math.floor(elapsed), amps.length - 1);
-            return [
-                amps[idx - 3] ?? 0,
-                amps[idx - 2] ?? 0,
-                amps[idx - 1] ?? 0,
-                amps[idx] ?? 0,
-                amps[idx + 1] ?? 0,
-                amps[idx + 2] ?? 0,
-                amps[idx + 3] ?? 0,
-            ];
-        };
-        setCurrentDistance(makeDistance());
+        setCurrentDistance(makeDistance(idx));
         setAmpWindow(getAmpWindow());
+        setMeasurements(makeMeasurements());
 
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.save();
@@ -127,6 +113,38 @@ const AudioVisualizer: FC<{ index: number }> = ({ index }) => {
         requestRef.current = requestAnimationFrame(draw);
     };
 
+    function makeMeasurements(): string[] {
+        const audio = audioRef.current;
+        if (!audio) return Array(7).fill(0);
+        const elapsed = audio.currentTime;
+        const currentIndex = Math.min(Math.floor(elapsed), amps.length - 1);
+        return [
+            makeDistance(currentIndex - 3),
+            makeDistance(currentIndex - 2),
+            makeDistance(currentIndex - 1),
+            makeDistance(currentIndex),
+            makeDistance(currentIndex + 1),
+            makeDistance(currentIndex + 2),
+            makeDistance(currentIndex + 3),
+        ];
+    };
+
+    function getAmpWindow(): number[] {
+        const audio = audioRef.current;
+        if (!audio) return Array(7).fill(0);
+        const elapsed = audio.currentTime;
+        const currentIndex = Math.min(Math.floor(elapsed), amps.length - 1);
+        return [
+            amps[currentIndex - 3] ?? 0,
+            amps[currentIndex - 2] ?? 0,
+            amps[currentIndex - 1] ?? 0,
+            amps[currentIndex] ?? 0,
+            amps[currentIndex + 1] ?? 0,
+            amps[currentIndex + 2] ?? 0,
+            amps[currentIndex + 3] ?? 0,
+        ];
+    };
+
     return (
         <Box
             sx={{
@@ -134,14 +152,19 @@ const AudioVisualizer: FC<{ index: number }> = ({ index }) => {
                 height: '100vh',
                 margin: 0,
                 overflow: 'hidden',
+                '.axis': {
+                    background: "#111",
+                    display: "block",
+                    margin: "0 auto",
+                },
             }}
         >
             {
                 <Button
                     onClick={handlePlay}
-                    style={{
+                    sx={{
                         left: 20,
-                        position: 'absolute',
+                        position: "absolute",
                         top: 20,
                         zIndex: 10
                     }}
@@ -153,9 +176,9 @@ const AudioVisualizer: FC<{ index: number }> = ({ index }) => {
             {isPlaying && (
                 <Button
                     onClick={handlePauseContinue}
-                    style={{
+                    sx={{
                         left: 20,
-                        position: 'absolute',
+                        position: "absolute",
                         top: 70,
                         zIndex: 10
                     }}
@@ -164,36 +187,54 @@ const AudioVisualizer: FC<{ index: number }> = ({ index }) => {
                     {isPaused ? 'Continue' : 'Pause'}
                 </Button>
             )}
-            <SVGArtboard 
-                coords={ampWindow} 
-            />
-            <canvas
-                ref={canvasRef}
-                style={{
-                    background: '#111',
-                    display: 'block',
-                    margin: '0 auto',
-                }}
-            />
             <Box
-            style={{
-                color: 'white',
-                fontFamily: 'monospace',
-                fontSize: '2em',
-                left: 150,
-                position: 'absolute',
-                top: 20,
-                zIndex: 10,
-            }}
+                sx={{
+                    alignItems:"center",
+                    display:"flex",
+                    flexDirection:"column",
+                    width:"100%",
+                    svg:{
+                        background:"green"
+                    }
+                }}
+            >
+                <SVGArtboard coords={ampWindow}/>
+                <Box
+                    sx={{
+                        display:"flex",
+                        flexDirection:"row",
+                        justifyContent:"space-evenly",
+                        justifyItems:"stretch",
+                        width:"600px",
+                    }}
+                >
+                    {makeMeasurements().map(e => (
+                        <Box color="white">
+                            {e}cm
+                        </Box>
+                    ))}
+                </Box>
+            </Box>
+            <canvas className="axis" ref={canvasRef}/>
+            <Box
+                sx={{
+                    color: "white",
+                    fontFamily: "monospace",
+                    fontSize: "2em",
+                    left: 150,
+                    position: "absolute",
+                    top: 20,
+                    zIndex: 10,
+                }}
             >
                 {index + 1} | {currentDistance}cm
             </Box>
             <Box
-                style={{
-                    color: '#fff',
-                    fontFamily: 'monospace',
-                    fontSize: '2em',
-                    position: 'absolute',
+                sx={{
+                    color: "#fff",
+                    fontFamily: "monospace",
+                    fontSize: "2em",
+                    position: "absolute",
                     right: 20,
                     top: 20,
                     zIndex: 10,
