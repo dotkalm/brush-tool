@@ -4520,7 +4520,6 @@ __metadata:
     "@types/node": "npm:^16.18.126"
     "@types/react": "npm:^19.1.8"
     "@types/react-dom": "npm:^19.1.6"
-    eslint-config-react-app: "npm:^7.0.1"
     eslint-plugin-jsx-a11y: "npm:^6.7.1"
     eslint-plugin-react: "npm:^7.33.0"
     eslint-plugin-react-hooks: "npm:^4.6.0"

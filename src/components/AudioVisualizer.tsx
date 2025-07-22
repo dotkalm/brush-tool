@@ -208,8 +208,8 @@ const AudioVisualizer: FC<{ index: number }> = ({ index }) => {
                         width:"600px",
                     }}
                 >
-                    {makeMeasurements().map(e => (
-                        <Box color="white">
+                    {makeMeasurements().map((e, index) => (
+                        <Box color="white" key={`${e}_${index}`}>
                             {e}cm
                         </Box>
                     ))}
