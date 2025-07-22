@@ -11,7 +11,6 @@ const SVGArtboard: React.FC<{ coords: number[] }> = ({ coords }) => (
             d={
                 coords.map(e => 200 - (e * 65)).map((yCoord, idx) => {
                     const xCoord = idx * 100;
-                    console.log({xCoord});
                     if (idx === 0) {
                         return `M 0,0 L ${xCoord},${yCoord}`
                     }
