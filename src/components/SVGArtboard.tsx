@@ -11,14 +11,15 @@ const SVGArtboard: React.FC<{
 }) => (
     <svg
         height={innerHeight * .45}
-        viewBox="0 0 960 198"
+        viewBox="0 0 960 215"
         width={innerWidth}
         xmlns="http://www.w3.org/2000/svg"
+        className="artboard"
     >
         <path
             d={
                 coords.map(e => {
-                  return 250 - (e * 235);
+                  return 300 - (e * 135);
                 }).map((yCoord, idx) => {
                     const xCoord = idx * 100;
                     if (idx === 0) {
@@ -30,7 +31,7 @@ const SVGArtboard: React.FC<{
                     return `L ${xCoord},${yCoord}`
                 }).join(' ')
             }
-            fill="orange"
+            fill="darkgrey"
         />
     </svg>
 );

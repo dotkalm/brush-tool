@@ -7,7 +7,7 @@ type BrushAngleProps = {
 
 const BrushAngle: React.FC<BrushAngleProps> = ({
     displayAngle,
-    innerWidth,
+    innerWidth: _,
     innerHeight,
 }) => (
     <svg
@@ -15,6 +15,7 @@ const BrushAngle: React.FC<BrushAngleProps> = ({
         height={innerHeight * 0.5}
         viewBox="0 0 600 100"
         preserveAspectRatio="xMidYMid meet"
+        className="brush-angle-svg"
     >
         <g transform="translate(300, 50)">
             <line

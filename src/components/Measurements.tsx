@@ -32,6 +32,8 @@ const Measurements: React.FC<{ measurements: string[] }> = ({ measurements }) =>
                             display: "flex",
                             flexDirection: "column",
                             alignItems: "center",
+                            height: "8vh",
+                            alignContent: "center",
                         }}
                     >
                         <Box>
@@ -47,7 +49,17 @@ const Measurements: React.FC<{ measurements: string[] }> = ({ measurements }) =>
                                 }}
                             />
                         </Box>
-                        <Box>{e}cm</Box>
+                        <Box
+                            sx={{
+                                fontSize: "1em",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                paddingTop: "1vh",
+                                fontWeight: isMiddle ? "600" : "400",
+                                textDecoration: isMiddle ? "underline" : "none",
+                            }}
+                        >{e}cm</Box>
                     </Box>
                 );
             })}

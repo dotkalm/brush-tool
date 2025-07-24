@@ -106,8 +106,7 @@ const AudioVisualizer: FC<AudioVisualizerProps> = ({
         // Update the target angle (the angle animation will smoothly transition to this value)
         targetAngleRef.current = angle;
 
-        setCounterText(`${idx}: ${amps[idx].toFixed(5)} (${(angle * (180 / Math.PI)).toFixed(1)}º)`);
-        setCurrentDistance(makeDistance(idx));
+        setCounterText(`${idx}`);
         setAmpWindow(getAmpWindow());
         setMeasurements(makeMeasurements());
 
@@ -209,9 +208,12 @@ const AudioVisualizer: FC<AudioVisualizerProps> = ({
                     display:"flex",
                     flexDirection:"column",
                     width:"100%",
-                    svg:{
+                    '.artboard':{
+                        background:"tomato"
+                    },
+                    '.brush-angle-svg': {
                         background:"green"
-                    }
+                    },
                 }}
             >
                 <SVGArtboard 
@@ -231,26 +233,39 @@ const AudioVisualizer: FC<AudioVisualizerProps> = ({
                     color: "white",
                     fontFamily: "monospace",
                     fontSize: "2em",
-                    left: 150,
+                    margin: "5px",
+                    right: 0,
                     position: "absolute",
-                    top: 20,
+                    top: 0,
                     zIndex: 10,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    flexDirection: "column",
+                    gap: "1vh",
+                    '.counter':{
+                        color: "purple",
+                        backgroundColor: "lightyellow",
+                        borderRadius: "45px",
+                        minWidth: "60px",
+                        height: "60px",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        borderColor: "purple",
+                        borderStyle: "solid",
+                        borderWidth: ".75vh",
+                        fontWeight: "600",
+                    }
+                    
                 }}
             >
-                {index + 1} | {currentDistance}cm
-            </Box>
-            <Box
-                sx={{
-                    color: "#fff",
-                    fontFamily: "monospace",
-                    fontSize: "2em",
-                    position: "absolute",
-                    right: 20,
-                    top: 20,
-                    zIndex: 10,
-                }}
-            >
-                {counterText}
+                <Box className='counter'>
+                    {index + 1}
+                </Box>
+                <Box className='counter'>
+                    {counterText}
+                </Box>
             </Box>
             <audio
                 preload="auto"
