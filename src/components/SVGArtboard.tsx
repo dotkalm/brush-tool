@@ -1,15 +1,25 @@
 import React from "react";
 
-const SVGArtboard: React.FC<{ coords: number[] }> = ({ coords }) => (
+const SVGArtboard: React.FC<{ 
+  coords: number[];
+  innerWidth: number;
+  innerHeight: number;
+}> = ({ 
+  coords,
+  innerHeight,
+  innerWidth,
+}) => (
     <svg
-        height={200}
-        viewBox="0 0 600 200"
-        width={600}
+        height={innerHeight * .45}
+        viewBox="0 0 960 198"
+        width={innerWidth}
         xmlns="http://www.w3.org/2000/svg"
     >
         <path
             d={
-                coords.map(e => 200 - (e * 65)).map((yCoord, idx) => {
+                coords.map(e => {
+                  return 250 - (e * 235);
+                }).map((yCoord, idx) => {
                     const xCoord = idx * 100;
                     if (idx === 0) {
                         return `M 0,0 L ${xCoord},${yCoord}`

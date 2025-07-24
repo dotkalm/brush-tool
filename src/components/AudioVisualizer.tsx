@@ -1,38 +1,66 @@
 import React, { type FC, useEffect, useRef, useState } from 'react';
 import Box from '@mui/material/Box';
-import Button from '@mui/material/Button';
 
 import audioFiles from '../constants/waves';
 import csvJSON from '../constants/normalized.json';
 import SVGArtboard from './SVGArtboard';
+import MeasurementDisplay from './Measurements';
+import PlaybackButtons from './PlaybackButtons';
+import BrushAngle from './BrushAngle';
 
-const AudioVisualizer: FC<{ index: number }> = ({ index }) => {
+type AudioVisualizerProps = { 
+    index: number;
+    innerWidth: number;
+    innerHeight: number;
+};
+
+const AudioVisualizer: FC<AudioVisualizerProps> = ({
+    index,
+    innerHeight,
+    innerWidth,
+}) => {
+    const numberOfWindows = 11;
+
     const amps = csvJSON[index];
     const audioFile = audioFiles[index];
-    const canvasRef = useRef<HTMLCanvasElement | null>(null);
+
+    const angleAnimationRef = useRef<number | null>(null);
     const audioRef = useRef<HTMLAudioElement | null>(null);
-    const [isPlaying, setIsPlaying] = useState(false);
-    const [counterText, setCounterText] = useState('');
     const requestRef = useRef<number | null>(null);
     const startTimeRef = useRef<number | null>(null);
-    const [currentDistance, setCurrentDistance] = useState('');
-    const [isPaused, setIsPaused] = useState(false);
-    const [pausedTime, setPausedTime] = useState(0);
-    const [ampWindow, setAmpWindow] = useState<number[]>([]);
-    const [measurements, setMeasurements] = useState<string[]>([])
+    const targetAngleRef = useRef(0);
 
-    // Resize canvas to fit window
+    const [ampWindow, setAmpWindow] = useState<number[]>([]);
+    const [counterText, setCounterText] = useState('');
+    const [currentDistance, setCurrentDistance] = useState('');
+    const [displayAngle, setDisplayAngle] = useState(0);
+    const [isPaused, setIsPaused] = useState(false);
+    const [isPlaying, setIsPlaying] = useState(false);
+    const [measurements, setMeasurements] = useState<string[]>([]);
+    const [pausedTime, setPausedTime] = useState(0);
+
+    // Initialize measurements after component mounts
     useEffect(() => {
-        const canvas = canvasRef.current;
-        const resize = () => {
-            if (!canvas) return;
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-        };
-        window.addEventListener('resize', resize);
-        resize();
-        return () => window.removeEventListener('resize', resize);
+        setMeasurements(makeMeasurements());
     }, []);
+
+    useEffect(() => {
+        if (isPlaying && !isPaused) {
+            if (!angleAnimationRef.current) {
+                angleAnimationRef.current = requestAnimationFrame(animateAngle);
+            }
+        } else if (angleAnimationRef.current) {
+            cancelAnimationFrame(angleAnimationRef.current);
+            angleAnimationRef.current = null;
+        }
+
+        return () => {
+            if (angleAnimationRef.current) {
+                cancelAnimationFrame(angleAnimationRef.current);
+                angleAnimationRef.current = null;
+            }
+        };
+    }, [isPlaying, isPaused, displayAngle]);
 
     const handlePauseContinue = () => {
         const audio = audioRef.current;
@@ -64,11 +92,8 @@ const AudioVisualizer: FC<{ index: number }> = ({ index }) => {
     }
 
     const draw = () => {
-        const canvas = canvasRef.current;
-        if (!canvas) return;
-        const ctx = canvas.getContext('2d');
         const audio = audioRef.current;
-        if (!audio || !ctx) return
+        if (!audio) return
         const elapsed = audio.currentTime;
         const idx = Math.min(Math.floor(elapsed), amps.length - 1);
         const minAmp = Math.min(...amps);
@@ -78,22 +103,13 @@ const AudioVisualizer: FC<{ index: number }> = ({ index }) => {
         const maxAngle = Math.PI / 2;
         const angle = Math.pow(ampNorm, curve) * maxAngle;
 
+        // Update the target angle (the angle animation will smoothly transition to this value)
+        targetAngleRef.current = angle;
+
         setCounterText(`${idx}: ${amps[idx].toFixed(5)} (${(angle * (180 / Math.PI)).toFixed(1)}º)`);
         setCurrentDistance(makeDistance(idx));
         setAmpWindow(getAmpWindow());
         setMeasurements(makeMeasurements());
-
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.save();
-        ctx.translate(canvas.width / 2, canvas.height / 2);
-        ctx.rotate(-angle);
-        ctx.strokeStyle = "#fff";
-        ctx.lineWidth = 8;
-        ctx.beginPath();
-        ctx.moveTo(-canvas.width / 3, 0);
-        ctx.lineTo(canvas.width / 3, 0);
-        ctx.stroke();
-        ctx.restore();
 
         if (!audio.paused && !audio.ended && idx < amps.length - 1) {
             requestRef.current = requestAnimationFrame(draw);
@@ -114,42 +130,58 @@ const AudioVisualizer: FC<{ index: number }> = ({ index }) => {
     };
 
     function makeMeasurements(): string[] {
-        const audio = audioRef.current;
-        if (!audio) return Array(7).fill(0);
-        const elapsed = audio.currentTime;
-        const currentIndex = Math.min(Math.floor(elapsed), amps.length - 1);
-        return [
-            makeDistance(currentIndex - 3),
-            makeDistance(currentIndex - 2),
-            makeDistance(currentIndex - 1),
-            makeDistance(currentIndex),
-            makeDistance(currentIndex + 1),
-            makeDistance(currentIndex + 2),
-            makeDistance(currentIndex + 3),
-        ];
+        return makeWindowArray().map(i => {
+            return makeDistance(i);
+        });
     };
 
     function getAmpWindow(): number[] {
+        return makeWindowArray()
+            .map(i => amps[i] ?? 0);
+    };
+
+    function makeWindowArray(): number[] {
         const audio = audioRef.current;
-        if (!audio) return Array(7).fill(0);
+        if (!audio || !amps || amps.length === 0) {
+            return Array(numberOfWindows).fill(0);
+        }
         const elapsed = audio.currentTime;
+        const midPoint = Math.floor(numberOfWindows / 2);
+        const distances = new Array(numberOfWindows).fill(0);
         const currentIndex = Math.min(Math.floor(elapsed), amps.length - 1);
-        return [
-            amps[currentIndex - 3] ?? 0,
-            amps[currentIndex - 2] ?? 0,
-            amps[currentIndex - 1] ?? 0,
-            amps[currentIndex] ?? 0,
-            amps[currentIndex + 1] ?? 0,
-            amps[currentIndex + 2] ?? 0,
-            amps[currentIndex + 3] ?? 0,
-        ];
+        return distances.map((_, i) => {
+            let subtractBy = 0;
+            let addBy = 0;
+            if (i < midPoint) {
+                subtractBy = midPoint - i;
+            }
+            if (i > midPoint) {
+                addBy = i - midPoint;
+            }
+            return currentIndex - subtractBy + addBy;
+        });
+    }
+
+    function animateAngle(): void {
+        if (!isPlaying) return;
+
+        // Apply easing to transition between current display angle and target angle
+        const easingFactor = 0.15; // Lower values make smoother but slower transitions
+        const angleDiff = targetAngleRef.current - displayAngle;
+
+        if (Math.abs(angleDiff) > 0.001) {
+            setDisplayAngle(displayAngle + angleDiff * easingFactor);
+        }
+
+        angleAnimationRef.current = requestAnimationFrame(animateAngle);
     };
 
     return (
         <Box
             sx={{
                 backgroundColor: '#111',
-                height: '100vh',
+                height: innerHeight, 
+                width: innerWidth,
                 margin: 0,
                 overflow: 'hidden',
                 '.axis': {
@@ -159,33 +191,17 @@ const AudioVisualizer: FC<{ index: number }> = ({ index }) => {
                 },
             }}
         >
-            {
-                <Button
-                    onClick={handlePlay}
-                    sx={{
-                        left: 20,
-                        position: "absolute",
-                        top: 20,
-                        zIndex: 10
-                    }}
-                    variant="outlined"
-                >
-                    {!isPlaying ? 'Play' : 'restart'}
-                </Button>
-            }
+            <PlaybackButtons 
+                clickHandler={handlePlay}
+                label={!isPlaying ? 'Play' : 'Restart'}
+                top={20}
+            />
             {isPlaying && (
-                <Button
-                    onClick={handlePauseContinue}
-                    sx={{
-                        left: 20,
-                        position: "absolute",
-                        top: 70,
-                        zIndex: 10
-                    }}
-                    variant="outlined"
-                >
-                    {isPaused ? 'Continue' : 'Pause'}
-                </Button>
+                <PlaybackButtons 
+                    clickHandler={handlePauseContinue}
+                    label={isPaused ? 'Continue' : 'Pause'}
+                    top={70}
+                />
             )}
             <Box
                 sx={{
@@ -198,24 +214,18 @@ const AudioVisualizer: FC<{ index: number }> = ({ index }) => {
                     }
                 }}
             >
-                <SVGArtboard coords={ampWindow}/>
-                <Box
-                    sx={{
-                        display:"flex",
-                        flexDirection:"row",
-                        justifyContent:"space-evenly",
-                        justifyItems:"stretch",
-                        width:"600px",
-                    }}
-                >
-                    {measurements.map((e, index) => (
-                        <Box color="white" key={`${e}_${index}`}>
-                            {e}cm
-                        </Box>
-                    ))}
-                </Box>
+                <SVGArtboard 
+                    coords={ampWindow}
+                    innerHeight={innerHeight}
+                    innerWidth={innerWidth}
+                />
+                <MeasurementDisplay measurements={measurements} />
+                <BrushAngle 
+                    displayAngle={displayAngle} 
+                    innerHeight={innerHeight}
+                    innerWidth={innerWidth}
+                />
             </Box>
-            <canvas className="axis" ref={canvasRef}/>
             <Box
                 sx={{
                     color: "white",
