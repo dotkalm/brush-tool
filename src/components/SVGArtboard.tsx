@@ -10,8 +10,8 @@ const SVGArtboard: React.FC<{
   innerWidth,
 }) => (
     <svg
-        height={innerHeight * .45}
-        viewBox="0 0 960 215"
+        height={innerHeight * .425}
+        viewBox="0 0 940 182"
         width={innerWidth}
         xmlns="http://www.w3.org/2000/svg"
         className="artboard"
@@ -19,7 +19,7 @@ const SVGArtboard: React.FC<{
         <path
             d={
                 coords.map(e => {
-                  return 300 - (e * 135);
+                  return 250 - (e * 175);
                 }).map((yCoord, idx) => {
                     const xCoord = idx * 100;
                     if (idx === 0) {

@@ -12,7 +12,7 @@ const BrushAngle: React.FC<BrushAngleProps> = ({
 }) => (
     <svg
         width="100%"
-        height={innerHeight * 0.5}
+        height={innerHeight * 0.45}
         viewBox="0 0 600 100"
         preserveAspectRatio="xMidYMid meet"
         className="brush-angle-svg"

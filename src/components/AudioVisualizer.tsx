@@ -7,6 +7,7 @@ import SVGArtboard from './SVGArtboard';
 import MeasurementDisplay from './Measurements';
 import PlaybackButtons from './PlaybackButtons';
 import BrushAngle from './BrushAngle';
+import TimelineScrubber from './TimelineScrubber';
 
 type AudioVisualizerProps = { 
     index: number;
@@ -38,6 +39,7 @@ const AudioVisualizer: FC<AudioVisualizerProps> = ({
     const [isPlaying, setIsPlaying] = useState(false);
     const [measurements, setMeasurements] = useState<string[]>([]);
     const [pausedTime, setPausedTime] = useState(0);
+    const [audioDuration, setAudioDuration] = useState(0);
 
     // Initialize measurements after component mounts
     useEffect(() => {
@@ -62,6 +64,22 @@ const AudioVisualizer: FC<AudioVisualizerProps> = ({
         };
     }, [isPlaying, isPaused, displayAngle]);
 
+    // Handle audio loaded to get duration
+    useEffect(() => {
+        const audio = audioRef.current;
+        if (!audio) return;
+        
+        const handleLoadedMetadata = () => {
+            setAudioDuration(audio.duration);
+        };
+        
+        audio.addEventListener('loadedmetadata', handleLoadedMetadata);
+        
+        return () => {
+            audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
+        };
+    }, [audioFile]);
+
     const handlePauseContinue = () => {
         const audio = audioRef.current;
         if (!audio) return;
@@ -80,6 +98,31 @@ const AudioVisualizer: FC<AudioVisualizerProps> = ({
             setIsPaused(false);
             requestRef.current = requestAnimationFrame(draw);
         }
+    };
+
+    const handleSeek = (time: number) => {
+        const audio = audioRef.current;
+        if (!audio) return;
+        
+        audio.currentTime = time;
+        
+        if (isPaused) {
+            setPausedTime(time);
+        }
+        
+        // Update state immediately for responsive feedback
+        const idx = Math.min(Math.floor(time), amps.length - 1);
+        const minAmp = Math.min(...amps);
+        const maxAmp = Math.max(...amps);
+        const ampNorm = (amps[idx] - minAmp) / (maxAmp - minAmp);
+        const curve = 1.5;
+        const maxAngle = Math.PI / 2;
+        const angle = Math.pow(ampNorm, curve) * maxAngle;
+        
+        targetAngleRef.current = angle;
+        setCounterText(`${idx}`);
+        setAmpWindow(getAmpWindow());
+        setMeasurements(makeMeasurements());
     };
 
     const makeDistance = (index: number) => {
@@ -222,6 +265,14 @@ const AudioVisualizer: FC<AudioVisualizerProps> = ({
                     innerWidth={innerWidth}
                 />
                 <MeasurementDisplay measurements={measurements} />
+                <TimelineScrubber
+                    currentTime={audioRef.current?.currentTime || 0}
+                    duration={audioDuration}
+                    isPlaying={isPlaying}
+                    onSeek={handleSeek}
+                    innerWidth={innerWidth}
+                    innerHeight={innerHeight}
+                />
                 <BrushAngle 
                     displayAngle={displayAngle} 
                     innerHeight={innerHeight}
