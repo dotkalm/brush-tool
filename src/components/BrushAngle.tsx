@@ -28,9 +28,9 @@ const BrushAngle: React.FC<BrushAngleProps> = ({
             />
             <line
                 x1="0"
-                y1="-40"
+                y1="-80"
                 x2="0"
-                y2="40"
+                y2="80"
                 stroke="#333"
                 strokeWidth="1"
             />
@@ -40,7 +40,7 @@ const BrushAngle: React.FC<BrushAngleProps> = ({
                     y1="0"
                     x2="200"
                     y2="0"
-                    stroke="#fff"
+                    stroke="lightyellow"
                     strokeWidth={6}
                 />
             </g>

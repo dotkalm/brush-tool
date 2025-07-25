@@ -41,11 +41,11 @@ const Measurements: React.FC<{ measurements: string[] }> = ({ measurements }) =>
                                 orientation="vertical"
                                 flexItem
                                 sx={{
-                                    backgroundColor: '#111', 
                                     height: "65vh",
                                     position: "absolute",
                                     transform: "translateY(-65vh)",
-                                    width: isMiddle ? "4px" : "1px",
+                                    width: isMiddle ? "2px" : "1px",
+                                    backgroundColor: isMiddle ? "#222222" : "#636363",
                                 }}
                             />
                         </Box>
@@ -55,7 +55,7 @@ const Measurements: React.FC<{ measurements: string[] }> = ({ measurements }) =>
                                 display: "flex",
                                 alignItems: "center",
                                 justifyContent: "center",
-                                paddingTop: "1vh",
+                                paddingTop: "2vh",
                                 fontWeight: isMiddle ? "600" : "400",
                                 textDecoration: isMiddle ? "underline" : "none",
                             }}
