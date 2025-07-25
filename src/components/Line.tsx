@@ -127,6 +127,24 @@ const Line: FC = () => {
         
         e.preventDefault(); // Prevent default touch behavior
         
+        if (touchStartRef.current) {
+            const touchDuration = Date.now() - touchStartRef.current.time;
+            const touch = e.changedTouches[0];
+            const deltaX = Math.abs(touch.clientX - touchStartRef.current.x);
+            const deltaY = Math.abs(touch.clientY - touchStartRef.current.y);
+            const totalMovement = deltaX + deltaY;
+            
+            // Detect tap: short duration, minimal movement
+            const isTap = touchDuration < 300 && totalMovement < 20;
+            
+            if (isTap && !isScrubbing) {
+                // Toggle play/pause via AudioVisualizer
+                if (audioVisualizerRef.current && audioVisualizerRef.current.togglePlayPause) {
+                    audioVisualizerRef.current.togglePlayPause();
+                }
+            }
+        }
+        
         touchStartRef.current = null;
         setIsScrubbing(false);
     };

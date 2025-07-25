@@ -244,6 +244,15 @@ const AudioVisualizer = forwardRef<any, AudioVisualizerProps>(({
                 handleSeek(newTime);
                 setSwipeAccumulator(0);
             }
+        },
+        togglePlayPause: () => {
+            if (!isPlaying) {
+                // Start playing from beginning or current position
+                handlePlay();
+            } else {
+                // Toggle pause/continue
+                handlePauseContinue();
+            }
         }
     }));
 
