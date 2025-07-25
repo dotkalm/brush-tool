@@ -1,4 +1,4 @@
-import React, { type FC, useEffect, useState } from 'react';
+import React, { type FC, useEffect, useState, useRef } from 'react';
 import Box from '@mui/material/Box';
 import AudioVisualizer from './AudioVisualizer';
 import VerticalButton from './VerticalButton';
@@ -12,6 +12,11 @@ const Line: FC = () => {
         innerWidth: window.innerWidth,
         innerHeight: window.innerHeight,
     });
+
+    // Touch handling refs and state
+    const touchStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
+    const audioVisualizerRef = useRef<any>(null);
+    const [isScrubbing, setIsScrubbing] = useState(false);
 
     const { innerWidth, innerHeight } = windowDimensions;
 
@@ -67,22 +72,98 @@ const Line: FC = () => {
         }
     }, [nextDisabled, previousDisabled, index]);
 
-    return (
-        <Box 
-            sx={
-                {
-                    position: 'relative',
-                    height: innerHeight,
-                    width: innerWidth,
-                    backgroundColor: '#111',
+    // Touch event handlers
+    const handleTouchStart = (e: TouchEvent) => {
+        // Check if touch is on a button element
+        const target = e.target as Element;
+        if (target.closest('button') || target.closest('[role="button"]')) {
+            return; // Don't prevent default for buttons
+        }
+        
+        e.preventDefault(); // Prevent default touch behavior
+        
+        if (e.touches.length === 1) {
+            const touch = e.touches[0];
+            touchStartRef.current = {
+                x: touch.clientX,
+                y: touch.clientY,
+                time: Date.now()
+            };
+        }
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+        // Check if touch is on a button element
+        const target = e.target as Element;
+        if (target.closest('button') || target.closest('[role="button"]')) {
+            return; // Don't prevent default for buttons
+        }
+        
+        e.preventDefault(); // Prevent default touch behavior
+        
+        if (e.touches.length === 1 && touchStartRef.current) {
+            const touch = e.touches[0];
+            const deltaX = touch.clientX - touchStartRef.current.x;
+            const deltaY = touch.clientY - touchStartRef.current.y;
+            
+            // Check if this is primarily a horizontal swipe
+            if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 10) {
+                setIsScrubbing(true);
+                
+                // Call the scrubber function from AudioVisualizer
+                if (audioVisualizerRef.current && audioVisualizerRef.current.handleSwipeScrub) {
+                    audioVisualizerRef.current.handleSwipeScrub(deltaX);
                 }
             }
+        }
+    };
+
+    const handleTouchEnd = (e: TouchEvent) => {
+        // Check if touch is on a button element
+        const target = e.target as Element;
+        if (target.closest('button') || target.closest('[role="button"]')) {
+            return; // Don't prevent default for buttons
+        }
+        
+        e.preventDefault(); // Prevent default touch behavior
+        
+        touchStartRef.current = null;
+        setIsScrubbing(false);
+    };
+
+    // Add touch event listeners
+    useEffect(() => {
+        const element = document.body;
+        
+        // Add touch event listeners with passive: false to allow preventDefault
+        element.addEventListener('touchstart', handleTouchStart, { passive: false });
+        element.addEventListener('touchmove', handleTouchMove, { passive: false });
+        element.addEventListener('touchend', handleTouchEnd, { passive: false });
+        
+        return () => {
+            element.removeEventListener('touchstart', handleTouchStart);
+            element.removeEventListener('touchmove', handleTouchMove);
+            element.removeEventListener('touchend', handleTouchEnd);
+        };
+    }, []);
+
+    return (
+        <Box 
+            sx={{
+                position: 'relative',
+                height: innerHeight,
+                width: innerWidth,
+                backgroundColor: '#111',
+                touchAction: 'none', // Disable default touch actions
+            }}
         >
             {index !== undefined && (
                 <AudioVisualizer
+                    ref={audioVisualizerRef}
                     index={index}
                     innerHeight={innerHeight}
                     innerWidth={innerWidth}
+                    isScrubbing={isScrubbing}
                 />
             )}
             {/* Navigation buttons positioned at the sides of the screen */}
@@ -95,7 +176,8 @@ const Line: FC = () => {
                     position: 'absolute',
                     right: '0',
                     width: '100%',
-                    zIndex: 20,
+                    zIndex: 30, // Increased z-index to ensure buttons are on top
+                    touchAction: 'auto', // Allow normal touch behavior for buttons
                 }}
             >
                 <VerticalButton

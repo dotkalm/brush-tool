@@ -1,4 +1,4 @@
-import React, { type FC, useEffect, useRef, useState } from 'react';
+import React, { type FC, useEffect, useRef, useState, useImperativeHandle, forwardRef } from 'react';
 import Box from '@mui/material/Box';
 
 import audioFiles from '../constants/waves';
@@ -13,13 +13,15 @@ type AudioVisualizerProps = {
     index: number;
     innerWidth: number;
     innerHeight: number;
+    isScrubbing?: boolean;
 };
 
-const AudioVisualizer: FC<AudioVisualizerProps> = ({
+const AudioVisualizer = forwardRef<any, AudioVisualizerProps>(({
     index,
     innerHeight,
     innerWidth,
-}) => {
+    isScrubbing = false,
+}, ref) => {
     const numberOfWindows = 11;
 
     const amps = csvJSON[index];
@@ -40,6 +42,7 @@ const AudioVisualizer: FC<AudioVisualizerProps> = ({
     const [measurements, setMeasurements] = useState<string[]>([]);
     const [pausedTime, setPausedTime] = useState(0);
     const [audioDuration, setAudioDuration] = useState(0);
+    const [swipeAccumulator, setSwipeAccumulator] = useState(0);
 
     // Initialize measurements after component mounts
     useEffect(() => {
@@ -218,6 +221,39 @@ const AudioVisualizer: FC<AudioVisualizerProps> = ({
         angleAnimationRef.current = requestAnimationFrame(animateAngle);
     };
 
+    // Expose methods to parent component
+    useImperativeHandle(ref, () => ({
+        handleSwipeScrub: (deltaX: number) => {
+            const audio = audioRef.current;
+            if (!audio || audioDuration === 0) return;
+            
+            // Accumulate swipe distance for smoother scrubbing
+            const newAccumulator = swipeAccumulator + deltaX;
+            setSwipeAccumulator(newAccumulator);
+            
+            // Convert swipe distance to time change (adjust sensitivity as needed)
+            const sensitivity = 0.01; // Lower = more sensitive
+            const timeChange = newAccumulator * sensitivity;
+            
+            // Calculate new time position
+            const currentTime = audio.currentTime;
+            const newTime = Math.max(0, Math.min(audioDuration, currentTime + timeChange));
+            
+            // Reset accumulator after applying change
+            if (Math.abs(timeChange) > 0.1) {
+                handleSeek(newTime);
+                setSwipeAccumulator(0);
+            }
+        }
+    }));
+
+    // Reset swipe accumulator when not scrubbing
+    useEffect(() => {
+        if (!isScrubbing) {
+            setSwipeAccumulator(0);
+        }
+    }, [isScrubbing]);
+
     return (
         <Box
             sx={{
@@ -226,6 +262,7 @@ const AudioVisualizer: FC<AudioVisualizerProps> = ({
                 width: innerWidth,
                 margin: 0,
                 overflow: 'hidden',
+                touchAction: 'none', // Disable default touch actions
                 '.axis': {
                     background: "#111",
                     display: "block",
@@ -265,6 +302,7 @@ const AudioVisualizer: FC<AudioVisualizerProps> = ({
                     innerWidth={innerWidth}
                 />
                 <MeasurementDisplay measurements={measurements} />
+                {/* Timeline Scrubber - show visual feedback when scrubbing */}
                 <TimelineScrubber
                     currentTime={audioRef.current?.currentTime || 0}
                     duration={audioDuration}
@@ -272,6 +310,7 @@ const AudioVisualizer: FC<AudioVisualizerProps> = ({
                     onSeek={handleSeek}
                     innerWidth={innerWidth}
                     innerHeight={innerHeight}
+                    isScrubbing={isScrubbing}
                 />
                 <BrushAngle 
                     displayAngle={displayAngle} 
@@ -325,6 +364,6 @@ const AudioVisualizer: FC<AudioVisualizerProps> = ({
             />
         </Box>
     );
-};
+});
 
 export default AudioVisualizer;

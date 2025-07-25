@@ -8,6 +8,7 @@ interface TimelineScrubberProps {
   onSeek: (time: number) => void;
   innerWidth: number;
   innerHeight: number;
+  isScrubbing?: boolean;
 }
 
 const TimelineScrubber: React.FC<TimelineScrubberProps> = ({
@@ -17,6 +18,7 @@ const TimelineScrubber: React.FC<TimelineScrubberProps> = ({
   onSeek,
   innerWidth,
   innerHeight,
+  isScrubbing = false
 }) => {
   const [isDragging, setIsDragging] = useState(false);
   const scrubberRef = useRef<HTMLDivElement>(null);
@@ -55,9 +57,14 @@ const TimelineScrubber: React.FC<TimelineScrubberProps> = ({
   return (
     <Box
       sx={{
-        width: innerWidth,
+        height: `${innerHeight * 0.05}px`,
+        width: `${innerWidth}px`, 
         zIndex: 15,
         padding: '10px 0',
+        // Visual feedback when scrubbing via swipe
+        opacity: isScrubbing ? 1 : 0.8,
+        transform: isScrubbing ? 'scale(1.05)' : 'scale(1)',
+        transition: 'opacity 0.2s ease, transform 0.2s ease',
       }}
     >
       <Box
@@ -67,12 +74,13 @@ const TimelineScrubber: React.FC<TimelineScrubberProps> = ({
         onPointerUp={handlePointerUp}
         sx={{
           width: '100%',
-          height: `${innerHeight * 0.04}px`, 
-          backgroundColor: 'rgba(255, 255, 255, 0.2)',
+          height: '100%',
+          backgroundColor: isScrubbing ? 'rgba(255, 165, 0, 0.3)' : 'rgba(255, 255, 255, 0.2)',
           borderRadius: '20px',
           position: 'relative',
           cursor: 'pointer',
           touchAction: 'none',
+          transition: 'background-color 0.2s ease',
           '&:hover': {
             backgroundColor: 'rgba(255, 255, 255, 0.3)',
           }
@@ -117,7 +125,7 @@ const TimelineScrubber: React.FC<TimelineScrubberProps> = ({
             left: `${progress-1.5}%`,
             padding: '2px 6px',
             position: 'absolute',
-            top: '28px',
+            top: '30px',
             transform: 'translateX(-50%)',
             whiteSpace: 'nowrap',
           }}
